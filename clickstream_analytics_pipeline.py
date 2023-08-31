@@ -341,6 +341,33 @@ _ = (
 
 # COMMAND ----------
 
+# Creating a new DataFrame 'session_product_outcomes' by grouping 'silver_events'
+# based on 'user_id', 'user_session', and 'product_id'.
+# Using agg() function to perform group-wise calculations. Here it checks if 'event_type' for a group is 'purchase',
+# If true, returns 1 else 0, then takes maximum of these values which effectively 
+# tells us if there was at least one purchase event in the group.
+session_product_outcomes = (
+    silver_events
+    .groupBy('user_id','user_session','product_id')
+      .agg(
+            F.max(F.expr("CASE WHEN event_type='purchase' THEN 1 ELSE 0 END")).alias('purchased')
+        )
+)
+
+# Writing the session_product_outcomes DataFrame to a new location in the gold zone of the data lake, replacing any existing data.
+# Allowing schema evolution by setting 'overwriteSchema' to 'true'.
+# Registering this DataFrame as a temporary table named 'session_product_outcomes' using saveAsTable() method.
+_ = (
+    session_product_outcomes
+    .write
+    .mode("overwrite")
+    .option("overwriteSchema", "true")
+    .option("path", f"{DATA_LAKE_PATH}/gold/session_product_outcomes")
+    .saveAsTable("session_product_outcomes")
+)
+
+# COMMAND ----------
+
 # Creating a new DataFrame 'raw_features_and_labels' by joining 'raw_features' with 'session_product_outcomes'
 # on the fields 'user_id', 'user_session', and 'product_id'.
 raw_features_and_labels = (
@@ -384,31 +411,4 @@ _ = (
     .option("overwriteSchema", "true")
     .option("path", f"{DATA_LAKE_PATH}/silver/features_and_labels")
     .saveAsTable("features_and_labels")
-)
-
-# COMMAND ----------
-
-# Creating a new DataFrame 'session_product_outcomes' by grouping 'silver_events'
-# based on 'user_id', 'user_session', and 'product_id'.
-# Using agg() function to perform group-wise calculations. Here it checks if 'event_type' for a group is 'purchase',
-# If true, returns 1 else 0, then takes maximum of these values which effectively 
-# tells us if there was at least one purchase event in the group.
-session_product_outcomes = (
-    silver_events
-    .groupBy('user_id','user_session','product_id')
-      .agg(
-            F.max(F.expr("CASE WHEN event_type='purchase' THEN 1 ELSE 0 END")).alias('purchased')
-        )
-)
-
-# Writing the session_product_outcomes DataFrame to a new location in the gold zone of the data lake, replacing any existing data.
-# Allowing schema evolution by setting 'overwriteSchema' to 'true'.
-# Registering this DataFrame as a temporary table named 'session_product_outcomes' using saveAsTable() method.
-_ = (
-    session_product_outcomes
-    .write
-    .mode("overwrite")
-    .option("overwriteSchema", "true")
-    .option("path", f"{DATA_LAKE_PATH}/gold/session_product_outcomes")
-    .saveAsTable("session_product_outcomes")
 )
